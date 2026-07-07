@@ -7,6 +7,7 @@ use App\Services\CarapisClient;
 use App\Services\VehicleMapper;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\RequestException;
 
 class SyncVehicles extends Command
 {
@@ -24,6 +25,9 @@ class SyncVehicles extends Command
     protected $description = 'Import available Encar vehicles from the Carapis catalog API';
 
     private array $filters = ['source' => 'encar', 'available_only' => 'true'];
+
+    /** Set when the API reports quota exhaustion (HTTP 429); retrying is pointless. */
+    private bool $throttled = false;
 
     public function handle(CarapisClient $carapis): int
     {
@@ -64,6 +68,11 @@ class SyncVehicles extends Command
 
                 if ($payload === null) {
                     $failedPages[] = $page;
+
+                    if ($this->throttled) {
+                        break;
+                    }
+
                     $this->warn("Page {$page}/{$totalPages} skipped after repeated failures.");
 
                     continue;
@@ -71,6 +80,12 @@ class SyncVehicles extends Command
 
                 $imported += $this->store($payload['results'], $syncStart);
                 $this->info("Page {$page}/{$totalPages} — {$imported} vehicles synced");
+            }
+
+            if ($this->throttled) {
+                $nextPage = min($failedPages);
+                $this->error("API quota exhausted (HTTP 429). Stopping. Resume later with: php artisan vehicles:sync --start-page={$nextPage}");
+                break;
             }
         }
 
@@ -118,6 +133,18 @@ class SyncVehicles extends Command
         for ($attempt = 1; $attempt <= self::PAGE_ATTEMPTS; $attempt++) {
             try {
                 return $carapis->vehicles($page, $pageSize, $this->filters);
+            } catch (RequestException $e) {
+                if ($e->response->status() === 429) {
+                    $this->throttled = true;
+
+                    return null;
+                }
+
+                $this->warn("Page {$page} attempt {$attempt}/".self::PAGE_ATTEMPTS." failed: {$e->getMessage()}");
+
+                if ($attempt < self::PAGE_ATTEMPTS) {
+                    sleep(self::RETRY_WAIT_SECONDS * $attempt);
+                }
             } catch (\Throwable $e) {
                 $this->warn("Page {$page} attempt {$attempt}/".self::PAGE_ATTEMPTS." failed: {$e->getMessage()}");
 

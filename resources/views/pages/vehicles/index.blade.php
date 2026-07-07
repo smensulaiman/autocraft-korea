@@ -487,15 +487,9 @@ new class extends Component
 
         <div class="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
             <div class="card-enter flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="pulse-dot inline-block size-2 rounded-full bg-signal"></span>
-                        <p class="font-mono text-[10.5px] tracking-[0.3em] text-white/75 uppercase">Live Korea inventory — updated daily</p>
-                    </div>
-                    <h1 class="mt-2 text-2xl font-black tracking-tight uppercase sm:text-3xl" style="font-stretch: 115%;">
-                        Find your car direct from Korea
-                    </h1>
-                </div>
+                <h1 class="text-2xl font-black tracking-tight uppercase sm:text-3xl" style="font-stretch: 115%;">
+                    Find your car direct from Korea
+                </h1>
                 <p class="font-mono text-[11px] tracking-widest text-white/75 uppercase tabular-nums">
                     {{ number_format($this->previewCount) }} units in stock
                 </p>

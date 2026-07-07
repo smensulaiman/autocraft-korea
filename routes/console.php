@@ -14,8 +14,8 @@ Schedule::command('vehicles:sync')
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/vehicles-sync.log'));
 
-Schedule::command('vehicles:enrich')
-    ->everyTenMinutes()
+Schedule::command('vehicles:enrich --limit=150')
+    ->hourly()
     ->withoutOverlapping()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/vehicles-enrich.log'));

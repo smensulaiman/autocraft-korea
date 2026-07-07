@@ -52,6 +52,11 @@ class EnrichVehicles extends Command
                     continue;
                 }
 
+                if ($e->response->status() === 429) {
+                    $this->warn('API quota exhausted (HTTP 429); stopping immediately.');
+                    break;
+                }
+
                 $consecutiveFailures++;
             } catch (\Throwable) {
                 $consecutiveFailures++;

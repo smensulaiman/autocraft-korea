@@ -245,7 +245,7 @@ new class extends Component
                             href="mailto:sales@autocraftjapan.com?subject={{ rawurlencode('Inquiry: '.$vehicle->title().' (stock '.($vehicle->listing_id ?: $vehicle->id).')') }}"
                             class="mt-5 block bg-ink py-3.5 text-center font-mono text-xs font-semibold tracking-[0.2em] text-white uppercase transition hover:bg-signal"
                         >
-                            Request quote
+                            Contact sales agent
                         </a>
                     </div>
 
