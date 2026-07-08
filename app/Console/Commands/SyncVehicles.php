@@ -20,7 +20,7 @@ class SyncVehicles extends Command
         {--pages=0 : Maximum number of pages to fetch (0 = all pages)}
         {--start-page=1 : Page to resume from}
         {--page-size=500 : Records per API request}
-        {--concurrency=4 : Pages fetched in parallel}';
+        {--concurrency=10 : Pages fetched in parallel}';
 
     protected $description = 'Import available Encar vehicles from the Carapis catalog API';
 

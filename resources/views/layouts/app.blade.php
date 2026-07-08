@@ -6,7 +6,7 @@
 
     <title>{{ $title ?? 'AutoCraft — Korea Direct Stock' }}</title>
 
-    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -29,7 +29,6 @@
                 <div x-data="{ time: '--:--:--' }"
                      x-init="const tick = () => time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date()); tick(); setInterval(tick, 1000)"
                      class="hidden items-center gap-2 font-mono text-[11px] tracking-widest text-white/60 uppercase tabular-nums sm:flex">
-                    <span class="pulse-dot inline-block size-1.5 rounded-full bg-signal"></span>
                     JST <span x-text="time"></span>
                 </div>
                 <a href="{{ route('vehicles.index') }}"
@@ -83,12 +82,9 @@
 
     <footer class="bg-ink text-white">
         <div class="h-0.5 bg-signal"></div>
-        <div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-4 py-8 sm:flex-row sm:items-center sm:px-6">
+        <div class="mx-auto max-w-7xl px-4 py-8 text-center sm:px-6">
             <p class="font-mono text-[11px] tracking-widest text-white/50 uppercase">
-                // AutoCraft — Direct export of Korean used vehicles
-            </p>
-            <p class="font-mono text-[11px] tracking-widest text-white/50 uppercase">
-                Stock updated daily from Encar
+                Developed by Sendajapan
             </p>
         </div>
     </footer>

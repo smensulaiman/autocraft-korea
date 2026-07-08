@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Inquiry;
 use App\Models\Vehicle;
 use App\Services\CarapisClient;
 use App\Services\VehicleMapper;
@@ -11,6 +12,18 @@ use Livewire\Component;
 new class extends Component
 {
     public Vehicle $vehicle;
+
+    public bool $showContactModal = false;
+
+    public bool $inquirySent = false;
+
+    public string $contactName = '';
+
+    public string $contactEmail = '';
+
+    public string $contactPhone = '';
+
+    public string $contactMessage = '';
 
     public function mount(Vehicle $vehicle): void
     {
@@ -24,6 +37,40 @@ new class extends Component
                 report($e); // Page still renders with catalog-level data.
             }
         }
+    }
+
+    public function openContactModal(): void
+    {
+        $this->showContactModal = true;
+        $this->inquirySent = false;
+    }
+
+    public function closeContactModal(): void
+    {
+        $this->showContactModal = false;
+    }
+
+    public function sendInquiry(): void
+    {
+        $data = $this->validate([
+            'contactName' => ['required', 'string', 'max:120'],
+            'contactEmail' => ['required', 'email', 'max:190'],
+            'contactPhone' => ['nullable', 'string', 'max:40'],
+            'contactMessage' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        Inquiry::create([
+            'vehicle_id' => $this->vehicle->id,
+            'name' => $data['contactName'],
+            'email' => $data['contactEmail'],
+            'phone' => $data['contactPhone'],
+            'message' => $data['contactMessage'],
+        ]);
+
+        // TODO: send a notification email once mail is configured.
+
+        $this->reset(['contactName', 'contactEmail', 'contactPhone', 'contactMessage']);
+        $this->inquirySent = true;
     }
 
     /**
@@ -166,13 +213,6 @@ new class extends Component
                     @endif
                 </div>
 
-                @if ($this->descriptionHtml())
-                    <div class="mt-6 border border-line bg-white p-6">
-                        <p class="microlabel mb-4">// Vehicle report</p>
-                        <div class="manifest-prose">{!! $this->descriptionHtml() !!}</div>
-                    </div>
-                @endif
-
                 @if (! empty($vehicle->features))
                     <div class="mt-6 border border-line bg-white p-6">
                         <p class="microlabel mb-4">// Equipment</p>
@@ -230,7 +270,7 @@ new class extends Component
                         <p class="microlabel">// Price</p>
                         <p class="mt-1 text-4xl font-black tracking-tight text-signal tabular-nums">
                             @if ($vehicle->price_usd)
-                                ${{ number_format($vehicle->price_usd) }}
+                                FOB ${{ number_format($vehicle->price_usd) }}
                             @else
                                 <span class="text-xl text-ink/50">Price on request</span>
                             @endif
@@ -241,12 +281,13 @@ new class extends Component
                             </p>
                         @endif
 
-                        <a
-                            href="mailto:sales@autocraftjapan.com?subject={{ rawurlencode('Inquiry: '.$vehicle->title().' (stock '.($vehicle->listing_id ?: $vehicle->id).')') }}"
-                            class="mt-5 block bg-ink py-3.5 text-center font-mono text-xs font-semibold tracking-[0.2em] text-white uppercase transition hover:bg-signal"
+                        <button
+                            type="button"
+                            wire:click="openContactModal"
+                            class="mt-5 block w-full bg-ink py-3.5 text-center font-mono text-xs font-semibold tracking-[0.2em] text-white uppercase transition hover:bg-signal"
                         >
                             Contact sales agent
-                        </a>
+                        </button>
                     </div>
 
                     <div class="p-5">
@@ -295,4 +336,80 @@ new class extends Component
             </section>
         @endif
     </section>
+
+    {{-- Contact sales agent modal --}}
+    @if ($showContactModal)
+        <div
+            x-data
+            x-trap.noscroll="true"
+            x-on:keydown.escape.window="$wire.closeContactModal()"
+            class="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4"
+        >
+            <div
+                x-on:click.outside="$wire.closeContactModal()"
+                class="w-full max-w-md border border-line bg-white shadow-2xl"
+            >
+                <div class="flex items-center justify-between border-b border-line p-5">
+                    <div>
+                        <p class="microlabel">// Inquiry</p>
+                        <h3 class="mt-1 text-lg font-black tracking-tight uppercase">Contact sales agent</h3>
+                    </div>
+                    <button type="button" wire:click="closeContactModal" aria-label="Close"
+                            class="grid size-8 shrink-0 place-items-center border border-line text-ink/50 transition hover:border-ink hover:text-ink">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="p-5">
+                    @if ($inquirySent)
+                        <div class="border border-line bg-paper p-6 text-center">
+                            <p class="text-sm font-semibold">Thanks — your inquiry has been sent.</p>
+                            <p class="mt-1 text-[13px] text-ink/60">Our sales team will reach out to you shortly about the {{ $vehicle->title() }}.</p>
+                            <button type="button" wire:click="closeContactModal"
+                                    class="mt-5 bg-ink px-6 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                                Close
+                            </button>
+                        </div>
+                    @else
+                        <p class="mb-4 text-[13px] text-ink/60">
+                            {{ $vehicle->title() }} — Stock #{{ $vehicle->listing_id ?: Str::limit($vehicle->id, 8, '') }}
+                        </p>
+
+                        <form wire:submit="sendInquiry" class="space-y-3">
+                            <div>
+                                <label class="microlabel mb-1 block">Name</label>
+                                <input type="text" wire:model="contactName" class="field" placeholder="Your full name">
+                                @error('contactName') <p class="mt-1 text-[11px] text-signal">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="microlabel mb-1 block">Email</label>
+                                <input type="email" wire:model="contactEmail" class="field" placeholder="you@example.com">
+                                @error('contactEmail') <p class="mt-1 text-[11px] text-signal">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="microlabel mb-1 block">Phone (optional)</label>
+                                <input type="text" wire:model="contactPhone" class="field" placeholder="+81 90 0000 0000">
+                                @error('contactPhone') <p class="mt-1 text-[11px] text-signal">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="microlabel mb-1 block">Message (optional)</label>
+                                <textarea wire:model="contactMessage" rows="4" class="field" placeholder="Any questions about this vehicle..."></textarea>
+                                @error('contactMessage') <p class="mt-1 text-[11px] text-signal">{{ $message }}</p> @enderror
+                            </div>
+
+                            <button
+                                type="submit"
+                                wire:loading.attr="disabled"
+                                wire:target="sendInquiry"
+                                class="mt-2 block w-full bg-ink py-3.5 text-center font-mono text-xs font-semibold tracking-[0.2em] text-white uppercase transition hover:bg-signal disabled:opacity-50"
+                            >
+                                <span wire:loading.remove wire:target="sendInquiry">Send</span>
+                                <span wire:loading wire:target="sendInquiry">Sending…</span>
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

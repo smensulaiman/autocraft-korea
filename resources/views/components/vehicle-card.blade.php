@@ -33,7 +33,7 @@
         </p>
         <p class="mt-2 font-extrabold tracking-tight text-signal tabular-nums {{ $compact ? 'text-base' : 'text-xl' }}">
             @if ($vehicle->price_usd)
-                ${{ number_format($vehicle->price_usd) }}
+                FOB ${{ number_format($vehicle->price_usd) }}
             @else
                 <span class="text-[12px] font-bold text-ink/50">Price on request</span>
             @endif

@@ -707,7 +707,7 @@ new class extends Component
 
             {{-- Browse by brand --}}
             <section>
-                <x-section-heading label="// Browse by brand" title="Popular brands" />
+                <x-section-heading title="Popular brands" />
                 <div class="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-9">
                     @foreach ($this->brandTiles as $tile)
                         <button
@@ -766,7 +766,7 @@ new class extends Component
                                 </p>
                                 <h3 class="mt-1 text-2xl font-black tracking-tight uppercase">{{ $hero->brand_name }} {{ $hero->model_name }}</h3>
                                 <p class="mt-0.5 truncate text-sm text-white/70">{{ $hero->trim }}</p>
-                                <p class="mt-2 text-2xl font-black text-signal tabular-nums">${{ number_format($hero->price_usd) }}</p>
+                                <p class="mt-2 text-2xl font-black text-signal tabular-nums">FOB ${{ number_format($hero->price_usd) }}</p>
                             </div>
                         </a>
 
@@ -960,7 +960,7 @@ new class extends Component
                                                     </span>
                                                     <span class="text-xl font-extrabold tracking-tight text-signal tabular-nums">
                                                         @if ($vehicle->price_usd)
-                                                            ${{ number_format($vehicle->price_usd) }}
+                                                            FOB ${{ number_format($vehicle->price_usd) }}
                                                         @else
                                                             <span class="text-sm font-bold text-ink/50">Price on request</span>
                                                         @endif
