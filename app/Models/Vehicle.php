@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property array<int, array{position?: int, url?: string|null, thumb_url?: string|null}>|null $photos
+ */
 class Vehicle extends Model
 {
     private const VALUE_LABELS = [
@@ -41,11 +44,18 @@ class Vehicle extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Brand, $this>
+     */
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class, 'brand_slug', 'slug');
     }
 
+    /**
+     * @param  Builder<Vehicle>  $query
+     * @return Builder<Vehicle>
+     */
     public function scopeAvailable(Builder $query): Builder
     {
         return $query->where('is_available', true);

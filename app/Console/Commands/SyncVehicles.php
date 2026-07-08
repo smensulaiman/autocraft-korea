@@ -24,6 +24,7 @@ class SyncVehicles extends Command
 
     protected $description = 'Import available Encar vehicles from the Carapis catalog API';
 
+    /** @var array<string, string> */
     private array $filters = ['source' => 'encar', 'available_only' => 'true'];
 
     /** Set when the API reports quota exhaustion (HTTP 429); retrying is pointless. */
@@ -70,7 +71,9 @@ class SyncVehicles extends Command
                     $failedPages[] = $page;
 
                     if ($this->throttled) {
-                        break;
+                        $nextPage = min($failedPages);
+                        $this->error("API quota exhausted (HTTP 429). Stopping. Resume later with: php artisan vehicles:sync --start-page={$nextPage}");
+                        break 2;
                     }
 
                     $this->warn("Page {$page}/{$totalPages} skipped after repeated failures.");
@@ -80,12 +83,6 @@ class SyncVehicles extends Command
 
                 $imported += $this->store($payload['results'], $syncStart);
                 $this->info("Page {$page}/{$totalPages} — {$imported} vehicles synced");
-            }
-
-            if ($this->throttled) {
-                $nextPage = min($failedPages);
-                $this->error("API quota exhausted (HTTP 429). Stopping. Resume later with: php artisan vehicles:sync --start-page={$nextPage}");
-                break;
             }
         }
 
@@ -108,11 +105,14 @@ class SyncVehicles extends Command
             $this->warn('Partial sync (--pages/--start-page set): skipped delisting step.');
         }
 
-        $this->info("Done. {$imported} vehicles upserted in ".$syncStart->diffForHumans(now(), true).'.');
+        $this->info("Done. {$imported} vehicles upserted in ".$syncStart->diffForHumans(now(), CarbonInterface::DIFF_ABSOLUTE).'.');
 
         return $failedPages === [] ? self::SUCCESS : self::FAILURE;
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
     private function store(array $items, CarbonInterface $syncedAt): int
     {
         $rows = array_map(

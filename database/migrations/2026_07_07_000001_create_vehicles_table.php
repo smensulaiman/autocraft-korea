@@ -67,7 +67,10 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->fullText(['brand_name', 'model_name', 'trim']);
+            // SQLite (used in tests) does not support fulltext index creation.
+            if (in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb', 'pgsql'], true)) {
+                $table->fullText(['brand_name', 'model_name', 'trim']);
+            }
         });
     }
 

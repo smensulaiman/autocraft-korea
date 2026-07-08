@@ -103,7 +103,8 @@ class SyncBrandLogos extends Command
 
     private function download(string $slug, string $remoteUrl, int &$downloaded): ?string
     {
-        $extension = pathinfo(parse_url($remoteUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'png';
+        $urlPath = parse_url($remoteUrl, PHP_URL_PATH);
+        $extension = (is_string($urlPath) ? pathinfo($urlPath, PATHINFO_EXTENSION) : '') ?: 'png';
         $filename = "{$slug}.{$extension}";
         $path = public_path("logos/{$filename}");
 

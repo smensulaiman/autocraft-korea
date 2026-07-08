@@ -12,6 +12,7 @@ class CarapisClient
     /**
      * Fetch one page of the vehicle catalog.
      *
+     * @param  array<string, string>  $filters
      * @return array{count: int, pages: int, has_next: bool, results: array<int, array<string, mixed>>}
      */
     public function vehicles(int $page = 1, int $pageSize = 500, array $filters = []): array
@@ -31,8 +32,9 @@ class CarapisClient
      * Fetch several catalog pages concurrently.
      *
      * @param  array<int, int>  $pages
+     * @param  array<string, string>  $filters
      * @return array<int, array{count: int, pages: int, has_next: bool, results: array<int, array<string, mixed>>}|null>
-     *         Page payloads keyed by page number; null for pages that failed.
+     *                                                                                                                   Page payloads keyed by page number; null for pages that failed.
      */
     public function vehiclesConcurrently(array $pages, int $pageSize = 500, array $filters = []): array
     {
