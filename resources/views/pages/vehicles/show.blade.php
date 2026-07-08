@@ -151,10 +151,10 @@ new class extends Component
             &larr; Back to stock
         </a>
 
-        <div class="mt-4 flex flex-col gap-8 lg:flex-row">
+        <div class="mt-4 flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-stretch">
 
-            {{-- Left: gallery + description --}}
-            <div class="min-w-0 flex-1">
+            {{-- Left: gallery --}}
+            <div class="min-w-0">
                 @php $photos = $vehicle->photoUrls(); @endphp
 
                 <div
@@ -166,16 +166,19 @@ new class extends Component
                     }"
                     x-on:keydown.arrow-right.window="next()"
                     x-on:keydown.arrow-left.window="prev()"
-                    class="border border-line bg-white"
+                    x-effect="$refs.thumbs?.children[active]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })"
+                    class="border border-line bg-white lg:flex lg:h-full lg:flex-col"
                 >
-                    <div class="relative aspect-[4/3] overflow-hidden bg-ink/5 sm:aspect-[16/10]">
+                    <div class="relative aspect-[4/3] overflow-hidden bg-ink/5 sm:aspect-[16/10] lg:aspect-auto lg:min-h-0 lg:flex-1 lg:basis-0 {{ count($photos) ? 'shimmer' : '' }}">
                         @forelse ($photos as $index => $photo)
                             <img
                                 src="{{ $photo['url'] }}"
                                 alt="{{ $vehicle->title() }} — photo {{ $index + 1 }}"
                                 x-show="active === {{ $index }}"
                                 x-cloak
-                                @if ($index > 0) loading="lazy" @endif
+                                x-transition.opacity.duration.200ms
+                                @if ($index > 0) loading="lazy" @else fetchpriority="high" @endif
+                                decoding="async"
                                 class="absolute inset-0 h-full w-full object-cover"
                             >
                         @empty
@@ -199,38 +202,28 @@ new class extends Component
                     </div>
 
                     @if (count($photos) > 1)
-                        <div class="flex gap-1.5 overflow-x-auto border-t border-line p-2">
+                        <div x-ref="thumbs"
+                             x-on:wheel.prevent="$el.scrollLeft += $event.deltaY + $event.deltaX"
+                             class="slim-scrollbar grid grid-flow-col grid-rows-2 justify-start gap-1.5 overflow-x-auto border-t border-line p-2 lg:shrink-0">
                             @foreach ($photos as $index => $photo)
                                 <button
                                     x-on:click="active = {{ $index }}"
                                     :class="active === {{ $index }} ? 'border-signal' : 'border-transparent opacity-60 hover:opacity-100'"
-                                    class="aspect-[4/3] w-20 shrink-0 overflow-hidden border-2 transition"
+                                    class="shimmer aspect-[4/3] w-20 overflow-hidden border-2 bg-ink/5 transition"
+                                    aria-label="Photo {{ $index + 1 }}"
                                 >
-                                    <img src="{{ $photo['thumb'] }}" alt="" loading="lazy" class="h-full w-full object-cover">
+                                    <img src="{{ $photo['thumb'] }}" alt="" loading="lazy" decoding="async" class="relative h-full w-full object-cover">
                                 </button>
                             @endforeach
                         </div>
                     @endif
                 </div>
-
-                @if (! empty($vehicle->features))
-                    <div class="mt-6 border border-line bg-white p-6">
-                        <p class="microlabel mb-4">// Equipment</p>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach ($vehicle->features as $feature)
-                                <span class="border border-line bg-paper px-2.5 py-1 text-[12px]">
-                                    {{ is_array($feature) ? ($feature['name'] ?? '') : $feature }}
-                                </span>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
             </div>
 
             {{-- Right: manifest panel --}}
-            <aside class="w-full shrink-0 lg:w-96">
-                <div class="border border-line border-t-2 border-t-signal bg-white shadow-sm lg:sticky lg:top-6">
-                    <div class="border-b border-line p-5">
+            <aside class="w-full min-w-0">
+                <div class="border border-line border-t-2 border-t-signal bg-white shadow-sm lg:flex lg:h-full lg:flex-col">
+                    <div class="shrink-0 border-b border-line p-5">
                         <div class="flex items-start justify-between gap-3">
                             <p class="microlabel">
                                 @if ($vehicle->year) {{ $vehicle->year }} · @endif
@@ -266,11 +259,16 @@ new class extends Component
                         </div>
                     </div>
 
-                    <div class="border-b border-line p-5">
-                        <p class="microlabel">// Price</p>
+                    <div class="shrink-0 border-b border-line p-5">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <p class="microlabel">Price</p>
+                            @if ($vehicle->price_usd)
+                                <span class="border border-line bg-paper px-2 py-0.5 font-mono text-[10px] tracking-widest text-ink/60 uppercase">FOB</span>
+                            @endif
+                        </div>
                         <p class="mt-1 text-4xl font-black tracking-tight text-signal tabular-nums">
                             @if ($vehicle->price_usd)
-                                FOB ${{ number_format($vehicle->price_usd) }}
+                                ${{ number_format($vehicle->price_usd) }}
                             @else
                                 <span class="text-xl text-ink/50">Price on request</span>
                             @endif
@@ -290,26 +288,32 @@ new class extends Component
                         </button>
                     </div>
 
-                    <div class="p-5">
-                        <p class="microlabel mb-3">// Specification</p>
-                        <dl class="divide-y divide-line/60">
-                            @foreach ($this->specs() as $label => $value)
-                                <div class="-mx-2 flex items-baseline justify-between gap-4 px-2 py-2 transition-colors hover:bg-paper">
-                                    <dt class="font-mono text-[11px] tracking-wider text-ink/50 uppercase">{{ $label }}</dt>
-                                    <dd class="text-right text-sm font-semibold">{{ $value }}</dd>
+                    <div class="p-5 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                        <p class="microlabel mb-3">Specification</p>
+                        @php $specs = array_slice($this->specs(), 0, 8, true); @endphp
+                        <dl class="grid grid-cols-2 gap-px border border-line bg-line">
+                            @foreach ($specs as $label => $value)
+                                <div class="min-w-0 bg-white px-3 py-2 transition-colors hover:bg-paper">
+                                    <dt class="font-mono text-[10px] tracking-wider text-ink/45 uppercase">{{ $label }}</dt>
+                                    <dd class="mt-0.5 truncate text-[13px] font-semibold" title="{{ $value }}">{{ $value }}</dd>
                                 </div>
                             @endforeach
+                            @if (count($specs) % 2 === 1)
+                                <div class="bg-white"></div>
+                            @endif
                         </dl>
 
                         @if ($vehicle->vin || $vehicle->vehicle_no)
-                            <div class="mt-4 border border-line bg-paper p-3 font-mono text-[11px] leading-relaxed text-ink/60">
-                                @if ($vehicle->vin)
-                                    <p>VIN — {{ $vehicle->vin }}</p>
-                                @endif
-                                @if ($vehicle->vehicle_no)
-                                    <p>PLATE — {{ $vehicle->vehicle_no }}</p>
-                                @endif
-                                <p>REF — {{ strtoupper(Str::limit($vehicle->id, 13, '')) }}</p>
+                            <div class="lg:mt-auto">
+                                <div class="mt-4 border border-line bg-paper p-3 font-mono text-[11px] leading-relaxed text-ink/60">
+                                    @if ($vehicle->vin)
+                                        <p>VIN — {{ $vehicle->vin }}</p>
+                                    @endif
+                                    @if ($vehicle->vehicle_no)
+                                        <p>PLATE — {{ $vehicle->vehicle_no }}</p>
+                                    @endif
+                                    <p>REF — {{ strtoupper(Str::limit($vehicle->id, 13, '')) }}</p>
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -317,13 +321,27 @@ new class extends Component
             </aside>
         </div>
 
+        {{-- Equipment --}}
+        @if (! empty($vehicle->features))
+            <div class="mt-8 border border-line bg-white p-6">
+                <p class="microlabel mb-4">Equipment</p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($vehicle->features as $feature)
+                        <span class="border border-line bg-paper px-2.5 py-1 text-[12px]">
+                            {{ is_array($feature) ? ($feature['name'] ?? '') : $feature }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         {{-- Similar vehicles --}}
         @if ($this->similar->isNotEmpty())
             <section class="mt-12">
-                <x-section-heading label="// You may also like" title="Similar vehicles">
+                <x-section-heading label="You may also like" title="Similar vehicles">
                     <a href="{{ route('vehicles.index', ['brands' => [$vehicle->brand_slug]]) }}"
-                       class="font-mono text-[11px] tracking-widest text-signal uppercase hover:underline">
-                        More {{ $vehicle->brand_name }} →
+                       class="bg-ink px-5 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                        More {{ $vehicle->brand_name }}
                     </a>
                 </x-section-heading>
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -351,7 +369,7 @@ new class extends Component
             >
                 <div class="flex items-center justify-between border-b border-line p-5">
                     <div>
-                        <p class="microlabel">// Inquiry</p>
+                        <p class="microlabel">Inquiry</p>
                         <h3 class="mt-1 text-lg font-black tracking-tight uppercase">Contact sales agent</h3>
                     </div>
                     <button type="button" wire:click="closeContactModal" aria-label="Close"

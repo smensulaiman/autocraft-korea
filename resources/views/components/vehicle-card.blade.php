@@ -2,10 +2,10 @@
 
 <a href="{{ route('vehicles.show', $vehicle) }}"
    {{ $attributes->merge(['class' => 'card-enter group block border border-line bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-ink hover:shadow-lg']) }}>
-    <div class="relative aspect-[4/3] overflow-hidden bg-ink/5">
+    <div class="relative aspect-[4/3] overflow-hidden bg-ink/5 {{ $vehicle->thumbUrl() ? 'shimmer' : '' }}">
         @if ($vehicle->thumbUrl())
-            <img src="{{ $vehicle->thumbUrl() }}" alt="{{ $vehicle->title() }}" loading="lazy"
-                 class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]">
+            <img src="{{ $vehicle->thumbUrl() }}" alt="{{ $vehicle->title() }}" loading="lazy" decoding="async"
+                 class="relative h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]">
         @else
             <div class="grid h-full w-full place-items-center">
                 <svg class="size-9 text-ink/15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

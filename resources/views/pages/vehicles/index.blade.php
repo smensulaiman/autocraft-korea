@@ -481,9 +481,13 @@ new class extends Component
 <div>
 
     {{-- ── Hero (compact, signal red) ───────────────────────────────── --}}
-    <section class="relative z-20 bg-ink-soft text-white">
+    <section class="relative z-20 overflow-hidden bg-ink-soft text-white">
         <div class="pointer-events-none absolute inset-0 opacity-[0.05]"
              style="background-image: linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px); background-size: 40px 40px;"></div>
+        <span class="pointer-events-none absolute -right-8 -bottom-10 leading-none font-black tracking-tight uppercase select-none"
+              style="font-size: 13rem; color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.07); font-stretch: 115%;">
+            Korea
+        </span>
 
         <div class="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
             <div class="card-enter flex flex-wrap items-end justify-between gap-3">
@@ -503,25 +507,40 @@ new class extends Component
                             type="search"
                             wire:model.live.debounce.500ms="draft.search"
                             wire:keydown.enter="apply"
-                            placeholder="Search brand, model, or grade — e.g. Sorento, G80, Avante"
+                            placeholder="Search brand, model, or grade — e.g. Toyota, Roomy, GT"
                             class="field !h-12 !pr-16"
                         >
-                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 font-mono text-[10px] tracking-widest text-ink/35 uppercase">↵</span>
+                        <span class="pointer-events-none absolute top-1/2 right-3 grid -translate-y-1/2 place-items-center text-signal">
+                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7"/>
+                                <path d="m21 21-4.3-4.3"/>
+                            </svg>
+                        </span>
                     </div>
 
                     <div class="grid grid-cols-1 gap-3 py-4 sm:grid-cols-2 lg:grid-cols-6">
 
                         {{-- Brands multi-select --}}
+                        @php $brandsArmed = ! empty($draft['brands']); @endphp
                         <div x-data="{ open: false }" x-on:click.outside="open = false" class="relative">
-                            <label class="microlabel mb-1 block">Brands</label>
+                            <label class="microlabel mb-1 flex items-center gap-1.5 {{ $brandsArmed ? '!text-signal' : '' }}">
+                                @if ($brandsArmed)
+                                    <span class="inline-block size-1.5 bg-signal"></span>
+                                @endif
+                                Brands
+                            </label>
                             <button type="button" x-on:click="open = !open"
-                                    class="field flex items-center justify-between gap-2 text-left">
+                                    class="field flex items-center justify-between gap-2 text-left {{ $brandsArmed ? '!border-ink font-semibold' : '' }}">
                                 <span class="truncate">
-                                    @if (empty($draft['brands'])) All brands
+                                    @if (! $brandsArmed) All brands
                                     @else {{ count($draft['brands']) }} selected
                                     @endif
                                 </span>
-                                <svg class="size-3.5 shrink-0 text-ink/40" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                                @if ($brandsArmed)
+                                    <span class="grid size-4 shrink-0 place-items-center bg-signal font-mono text-[9px] font-semibold text-white">{{ count($draft['brands']) }}</span>
+                                @else
+                                    <svg class="size-3.5 shrink-0 text-ink/40" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                                @endif
                             </button>
                             <div x-show="open" x-cloak x-transition.opacity.duration.150ms
                                  class="absolute z-40 mt-1 max-h-96 w-full min-w-64 overflow-y-auto border border-line bg-white shadow-xl">
@@ -544,18 +563,28 @@ new class extends Component
                         </div>
 
                         {{-- Models multi-select --}}
+                        @php $modelsArmed = ! empty($draft['brands']) && ! empty($draft['models']); @endphp
                         <div x-data="{ open: false }" x-on:click.outside="open = false" class="relative">
-                            <label class="microlabel mb-1 block">Models</label>
+                            <label class="microlabel mb-1 flex items-center gap-1.5 {{ $modelsArmed ? '!text-signal' : '' }}">
+                                @if ($modelsArmed)
+                                    <span class="inline-block size-1.5 bg-signal"></span>
+                                @endif
+                                Models
+                            </label>
                             <button type="button" x-on:click="open = !open"
                                     @if (empty($draft['brands'])) disabled @endif
-                                    class="field flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50">
+                                    class="field flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50 {{ $modelsArmed ? '!border-ink font-semibold' : '' }}">
                                 <span class="truncate">
                                     @if (empty($draft['brands'])) Select brand
                                     @elseif (empty($draft['models'])) All models
                                     @else {{ count($draft['models']) }} selected
                                     @endif
                                 </span>
-                                <svg class="size-3.5 shrink-0 text-ink/40" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                                @if ($modelsArmed)
+                                    <span class="grid size-4 shrink-0 place-items-center bg-signal font-mono text-[9px] font-semibold text-white">{{ count($draft['models']) }}</span>
+                                @else
+                                    <svg class="size-3.5 shrink-0 text-ink/40" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                                @endif
                             </button>
                             <div x-show="open" x-cloak x-transition.opacity.duration.150ms
                                  class="absolute z-40 mt-1 max-h-96 w-full min-w-64 overflow-y-auto border border-line bg-white shadow-xl">
@@ -597,16 +626,22 @@ new class extends Component
                         />
 
                         {{-- Year range --}}
+                        @php $yearArmed = ($draft['yearFrom'] ?? '') !== '' || ($draft['yearTo'] ?? '') !== ''; @endphp
                         <div class="sm:col-span-2 lg:col-span-2">
-                            <label class="microlabel mb-1 block">Year</label>
+                            <label class="microlabel mb-1 flex items-center gap-1.5 {{ $yearArmed ? '!text-signal' : '' }}">
+                                @if ($yearArmed)
+                                    <span class="inline-block size-1.5 bg-signal"></span>
+                                @endif
+                                Year
+                            </label>
                             <div class="flex items-center gap-2">
-                                <select wire:model.live="draft.yearFrom" class="field">
+                                <select wire:model.live="draft.yearFrom" class="field {{ ($draft['yearFrom'] ?? '') !== '' ? '!border-ink font-semibold' : '' }}">
                                     <option value="">From</option>
                                     @for ($y = $this->facets['yearMax']; $y >= $this->facets['yearMin']; $y--)
                                         <option value="{{ $y }}">{{ $y }}</option>
                                     @endfor
                                 </select>
-                                <select wire:model.live="draft.yearTo" class="field">
+                                <select wire:model.live="draft.yearTo" class="field {{ ($draft['yearTo'] ?? '') !== '' ? '!border-ink font-semibold' : '' }}">
                                     <option value="">To</option>
                                     @for ($y = $this->facets['yearMax']; $y >= $this->facets['yearMin']; $y--)
                                         <option value="{{ $y }}">{{ $y }}</option>
@@ -619,18 +654,30 @@ new class extends Component
                     {{-- More filters (collapsible) --}}
                     <div x-show="more" x-collapse x-cloak>
                         <div class="grid grid-cols-1 gap-3 border-t border-line py-4 sm:grid-cols-2 lg:grid-cols-6">
+                            @php $mileageArmed = ($draft['mileageFrom'] ?? '') !== '' || ($draft['mileageTo'] ?? '') !== ''; @endphp
                             <div>
-                                <label class="microlabel mb-1 block">Mileage (km)</label>
+                                <label class="microlabel mb-1 flex items-center gap-1.5 {{ $mileageArmed ? '!text-signal' : '' }}">
+                                    @if ($mileageArmed)
+                                        <span class="inline-block size-1.5 bg-signal"></span>
+                                    @endif
+                                    Mileage (km)
+                                </label>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" min="0" step="10000" placeholder="Min" wire:model.live.debounce.600ms="draft.mileageFrom" class="field">
-                                    <input type="number" min="0" step="10000" placeholder="Max" wire:model.live.debounce.600ms="draft.mileageTo" class="field">
+                                    <input type="number" min="0" step="10000" placeholder="Min" wire:model.live.debounce.600ms="draft.mileageFrom" class="field {{ ($draft['mileageFrom'] ?? '') !== '' ? '!border-ink font-semibold' : '' }}">
+                                    <input type="number" min="0" step="10000" placeholder="Max" wire:model.live.debounce.600ms="draft.mileageTo" class="field {{ ($draft['mileageTo'] ?? '') !== '' ? '!border-ink font-semibold' : '' }}">
                                 </div>
                             </div>
+                            @php $ccArmed = ($draft['ccFrom'] ?? '') !== '' || ($draft['ccTo'] ?? '') !== ''; @endphp
                             <div>
-                                <label class="microlabel mb-1 block">Engine (cc)</label>
+                                <label class="microlabel mb-1 flex items-center gap-1.5 {{ $ccArmed ? '!text-signal' : '' }}">
+                                    @if ($ccArmed)
+                                        <span class="inline-block size-1.5 bg-signal"></span>
+                                    @endif
+                                    Engine (cc)
+                                </label>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" min="0" step="100" placeholder="Min" wire:model.live.debounce.600ms="draft.ccFrom" class="field">
-                                    <input type="number" min="0" step="100" placeholder="Max" wire:model.live.debounce.600ms="draft.ccTo" class="field">
+                                    <input type="number" min="0" step="100" placeholder="Min" wire:model.live.debounce.600ms="draft.ccFrom" class="field {{ ($draft['ccFrom'] ?? '') !== '' ? '!border-ink font-semibold' : '' }}">
+                                    <input type="number" min="0" step="100" placeholder="Max" wire:model.live.debounce.600ms="draft.ccTo" class="field {{ ($draft['ccTo'] ?? '') !== '' ? '!border-ink font-semibold' : '' }}">
                                 </div>
                             </div>
                             <x-filter-multiselect
@@ -713,8 +760,7 @@ new class extends Component
                         <button
                             wire:click="toggleBrand('{{ $tile['slug'] }}')"
                             title="{{ $tile['name'] }} ({{ number_format($tile['total']) }})"
-                            class="group flex flex-col items-center gap-1.5 border border-line bg-white p-3 transition hover:border-signal"
-                        >
+                            class="group flex flex-col items-center gap-1.5 border border-line bg-white p-3 transition hover:border-signal cursor-pointer">
                             <img src="{{ $tile['logo'] }}" alt="{{ $tile['name'] }}" loading="lazy"
                                  class="h-8 w-full object-contain grayscale transition-all duration-300 group-hover:scale-110 group-hover:grayscale-0">
                             <span class="w-full truncate text-center font-mono text-[9px] tracking-wide text-ink/50 uppercase">{{ $tile['name'] }}</span>
@@ -726,9 +772,9 @@ new class extends Component
             {{-- New arrivals --}}
             @if ($this->newArrivals->isNotEmpty())
                 <section>
-                    <x-section-heading label="// Fresh from Korea" title="New arrivals">
-                        <button wire:click="$set('show', 'all')" class="font-mono text-[11px] tracking-widest text-signal uppercase hover:underline">
-                            View all →
+                    <x-section-heading label="Fresh from Korea" title="New arrivals">
+                        <button wire:click="$set('show', 'all')" class="bg-ink px-5 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                            View all
                         </button>
                     </x-section-heading>
                     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -742,12 +788,12 @@ new class extends Component
             @endif
 
             {{-- Featured premium --}}
-            @if ($this->featured->count() >= 3)
+            @if ($this->featured->count() >= 1)
                 <section>
-                    <x-section-heading label="// Hand-picked stock" title="Premium picks">
+                    <x-section-heading label="Hand-picked stock" title="Premium picks">
                         <a href="{{ route('vehicles.index', ['priceFrom' => 30000, 'sort' => 'price_high']) }}"
-                           class="font-mono text-[11px] tracking-widest text-signal uppercase hover:underline">
-                            View all →
+                           class="bg-ink px-5 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                            View all
                         </a>
                     </x-section-heading>
 
@@ -756,9 +802,9 @@ new class extends Component
                         {{-- Big featured card --}}
                         <a href="{{ route('vehicles.show', $hero) }}"
                            class="card-enter group relative block overflow-hidden border border-line bg-ink">
-                            <div class="aspect-[16/11] overflow-hidden">
-                                <img src="{{ $hero->thumbUrl() }}" alt="{{ $hero->title() }}" loading="lazy"
-                                     class="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-[1.05]">
+                            <div class="shimmer aspect-[16/11] overflow-hidden">
+                                <img src="{{ $hero->thumbUrl() }}" alt="{{ $hero->title() }}" loading="lazy" decoding="async"
+                                     class="relative h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-[1.05]">
                             </div>
                             <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/70 to-transparent p-5 pt-16 text-white">
                                 <p class="font-mono text-[10.5px] tracking-widest text-white/70 uppercase">
@@ -772,7 +818,7 @@ new class extends Component
 
                         {{-- Side grid --}}
                         <div class="grid grid-cols-2 gap-3">
-                            @foreach ($this->featured->skip(1)->take(4) as $vehicle)
+                            @foreach ($this->featured->skip(1)->take(2) as $vehicle)
                                 <x-vehicle-card :vehicle="$vehicle" :compact="true"
                                                 wire:key="feat-{{ $vehicle->id }}"
                                                 style="animation-delay: {{ $loop->index * 60 }}ms" />
@@ -785,10 +831,10 @@ new class extends Component
             {{-- High grade --}}
             @if ($this->highGrade->isNotEmpty())
                 <section>
-                    <x-section-heading label="// Verified · low mileage · recent year" title="High grade">
+                    <x-section-heading label="Verified" title="High grade">
                         <a href="{{ route('vehicles.index', ['yearFrom' => now()->year - 4, 'mileageTo' => 50000]) }}"
-                           class="font-mono text-[11px] tracking-widest text-signal uppercase hover:underline">
-                            View all →
+                           class="bg-ink px-5 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                            View all
                         </a>
                     </x-section-heading>
                     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -804,10 +850,10 @@ new class extends Component
             {{-- Budget picks --}}
             @if ($this->budget->isNotEmpty())
                 <section>
-                    <x-section-heading label="// Under $10,000" title="Budget deals">
+                    <x-section-heading label="Under $10,000" title="Budget deals">
                         <a href="{{ route('vehicles.index', ['priceTo' => 10000, 'sort' => 'price_low']) }}"
-                           class="font-mono text-[11px] tracking-widest text-signal uppercase hover:underline">
-                            View all →
+                           class="bg-ink px-5 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                            View all
                         </a>
                     </x-section-heading>
                     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -823,10 +869,10 @@ new class extends Component
             {{-- SUV collection --}}
             @if ($this->suvs->isNotEmpty())
                 <section>
-                    <x-section-heading label="// Family &amp; off-road ready" title="SUV collection">
+                    <x-section-heading label="Family" title="SUV collection">
                         <a href="{{ route('vehicles.index', ['bodies' => ['suv']]) }}"
-                           class="font-mono text-[11px] tracking-widest text-signal uppercase hover:underline">
-                            View all →
+                           class="bg-ink px-5 py-2.5 font-mono text-[11px] tracking-widest text-white uppercase transition hover:bg-signal">
+                            View all
                         </a>
                     </x-section-heading>
                     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -850,7 +896,7 @@ new class extends Component
                 <aside class="hidden w-56 shrink-0 lg:block">
                     <div class="sticky top-6 border border-line bg-white">
                         <div class="flex items-center justify-between border-b border-line px-3 py-2.5">
-                            <span class="microlabel">// Brands</span>
+                            <span class="microlabel">Brands</span>
                             @if (! empty($brands))
                                 <button wire:click="$set('brands', [])"
                                         class="font-mono text-[10px] tracking-widest text-signal uppercase hover:underline">
@@ -914,7 +960,7 @@ new class extends Component
                         <div wire:loading.delay.class="animate-pulse opacity-50" class="transition-opacity duration-200">
                             @if ($this->vehicles->isEmpty())
                                 <div class="border border-line bg-white px-6 py-20 text-center">
-                                    <p class="font-mono text-xs tracking-[0.3em] text-ink/40 uppercase">// No match</p>
+                                    <p class="font-mono text-xs tracking-[0.3em] text-ink/40 uppercase">No match</p>
                                     <p class="mt-3 text-lg font-bold uppercase">No vehicles match these filters</p>
                                     <button wire:click="resetAll"
                                             class="mt-6 inline-block bg-ink px-6 py-3 font-mono text-xs tracking-widest text-white uppercase transition hover:bg-signal">
@@ -928,10 +974,10 @@ new class extends Component
                                            wire:key="list-{{ $vehicle->id }}"
                                            class="card-enter group flex border border-line bg-white transition-colors duration-200 hover:border-ink"
                                            style="animation-delay: {{ min($loop->index, 8) * 40 }}ms">
-                                            <div class="relative aspect-[4/3] w-40 shrink-0 overflow-hidden bg-ink/5 sm:w-56">
+                                            <div class="relative aspect-[4/3] w-40 shrink-0 overflow-hidden bg-ink/5 sm:w-56 {{ $vehicle->thumbUrl() ? 'shimmer' : '' }}">
                                                 @if ($vehicle->thumbUrl())
-                                                    <img src="{{ $vehicle->thumbUrl() }}" alt="{{ $vehicle->title() }}" loading="lazy"
-                                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]">
+                                                    <img src="{{ $vehicle->thumbUrl() }}" alt="{{ $vehicle->title() }}" loading="lazy" decoding="async"
+                                                         class="relative h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]">
                                                 @else
                                                     <div class="grid h-full w-full place-items-center font-mono text-[10px] tracking-widest text-ink/30 uppercase">No photo</div>
                                                 @endif

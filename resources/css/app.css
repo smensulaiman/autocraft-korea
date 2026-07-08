@@ -73,6 +73,63 @@ button:focus-visible {
     }
 }
 
+@keyframes shimmer-sweep {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Skeleton behind images: visible until the <img> paints over it. */
+@utility shimmer {
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+            90deg,
+            transparent,
+            color-mix(in srgb, white 65%, transparent),
+            transparent
+        );
+        animation: shimmer-sweep 1.6s ease-in-out infinite;
+    }
+}
+
+@utility no-scrollbar {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@utility slim-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+
+    &::-webkit-scrollbar {
+        height: 5px;
+        width: 5px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--color-line);
+        border-radius: 9999px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    }
+}
+
 @utility hazard {
     background-image: repeating-linear-gradient(
         -45deg,

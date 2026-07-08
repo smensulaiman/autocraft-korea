@@ -21,7 +21,7 @@
                 <span class="grid size-9 place-items-center bg-signal font-mono text-sm font-semibold text-white">AC</span>
                 <span class="leading-none">
                     <span class="block text-lg font-extrabold tracking-tight uppercase" style="font-stretch: 115%;">AutoCraft</span>
-                    <span class="mt-1 block font-mono text-[10px] tracking-[0.25em] text-white/50 uppercase">Korea Direct Stock</span>
+                    <span class="block font-mono text-[10px] tracking-[0.25em] text-white/50 uppercase">Autocraft Korea</span>
                 </span>
             </a>
 
@@ -49,7 +49,7 @@
         <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6">
             <div class="mb-6 flex items-end gap-4">
                 <div class="shrink-0">
-                    <p class="microlabel">// Trusted export credentials</p>
+                    <p class="microlabel">Trusted export credentials</p>
                     <h2 class="mt-1 text-xl font-black tracking-tight uppercase">Verified member of</h2>
                 </div>
                 <div class="mb-1.5 hidden h-px flex-1 bg-line sm:block"></div>
