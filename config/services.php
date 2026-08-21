@@ -33,11 +33,22 @@ return [
         'key' => env('CARAPIS_API_KEY'),
     ],
 
+    'pricing' => [
+        'markup' => (float) env('PRICE_MARKUP_PERCENT', 10),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    'sales' => [
+        // Comma-separated list of recipient addresses.
+        'agent_emails' => array_filter(array_map('trim', explode(',', (string) env('SALES_AGENT_EMAIL')))),
+        // Comma-separated list of addresses CC'd on every inquiry.
+        'cc_emails' => array_filter(array_map('trim', explode(',', (string) env('SALES_CC_EMAIL')))),
     ],
 
 ];

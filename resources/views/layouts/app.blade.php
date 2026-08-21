@@ -82,7 +82,11 @@
 
     <footer class="bg-ink text-white">
         <div class="h-0.5 bg-signal"></div>
-        <div class="mx-auto max-w-7xl px-4 py-8 text-center sm:px-6">
+        <div class="mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 py-8 text-center sm:px-6">
+            <a href="{{ route('privacy-policy') }}"
+               class="font-mono text-[11px] tracking-widest text-white/60 uppercase transition hover:text-signal">
+                Privacy Policy
+            </a>
             <p class="font-mono text-[11px] tracking-widest text-white/50 uppercase">
                 Developed by Sendajapan
             </p>

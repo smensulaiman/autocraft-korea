@@ -1,10 +1,12 @@
 <?php
 
+use App\Mail\VehicleInquiryReceived;
 use App\Models\Inquiry;
 use App\Models\Vehicle;
 use App\Services\CarapisClient;
 use App\Services\VehicleMapper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -12,6 +14,8 @@ use Livewire\Component;
 new class extends Component
 {
     public Vehicle $vehicle;
+
+    public bool $debug = false;
 
     public bool $showContactModal = false;
 
@@ -28,6 +32,7 @@ new class extends Component
     public function mount(Vehicle $vehicle): void
     {
         $this->vehicle = $vehicle;
+        $this->debug = request()->boolean('debug');
 
         if (! $vehicle->hasDetails()) {
             try {
@@ -50,27 +55,51 @@ new class extends Component
         $this->showContactModal = false;
     }
 
-    public function sendInquiry(): void
+    public function sendInquiry(string $contactMessage = ''): void
     {
+        $this->contactMessage = $contactMessage;
+
         $data = $this->validate([
             'contactName' => ['required', 'string', 'max:120'],
             'contactEmail' => ['required', 'email', 'max:190'],
             'contactPhone' => ['nullable', 'string', 'max:40'],
-            'contactMessage' => ['nullable', 'string', 'max:2000'],
+            'contactMessage' => ['nullable', 'string', 'max:4000'],
         ]);
 
-        Inquiry::create([
+        $inquiry = Inquiry::create([
             'vehicle_id' => $this->vehicle->id,
             'name' => $data['contactName'],
             'email' => $data['contactEmail'],
             'phone' => $data['contactPhone'],
-            'message' => $data['contactMessage'],
+            'message' => $this->sanitizeRichText($data['contactMessage']),
         ]);
 
-        // TODO: send a notification email once mail is configured.
+        if ($agentEmails = config('services.sales.agent_emails')) {
+            try {
+                Mail::to($agentEmails)->send(new VehicleInquiryReceived($inquiry));
+            } catch (\Throwable $e) {
+                report($e); // Inquiry is saved either way; surface delivery failures via logs.
+            }
+        }
 
         $this->reset(['contactName', 'contactEmail', 'contactPhone', 'contactMessage']);
         $this->inquirySent = true;
+    }
+
+    /**
+     * Strip the rich-text editor's output down to a small set of safe
+     * formatting tags with no attributes (no scripts, styles, or handlers).
+     */
+    private function sanitizeRichText(?string $html): ?string
+    {
+        if ($html === null || trim($html) === '') {
+            return null;
+        }
+
+        $html = strip_tags($html, '<p><br><strong><b><em><i><u><ul><ol><li>');
+        $html = trim(preg_replace('/<(\w+)[^>]*>/', '<$1>', $html));
+
+        return trim(strip_tags($html)) === '' ? null : $html;
     }
 
     /**
@@ -204,7 +233,7 @@ new class extends Component
                     @if (count($photos) > 1)
                         <div x-ref="thumbs"
                              x-on:wheel.prevent="$el.scrollLeft += $event.deltaY + $event.deltaX"
-                             class="slim-scrollbar grid grid-flow-col grid-rows-2 justify-start gap-1.5 overflow-x-auto border-t border-line p-2 lg:shrink-0">
+                             class="slim-scrollbar grid {{ count($photos) <= 6 ? 'grid-flow-col grid-rows-1' : 'grid-flow-col grid-rows-2' }} justify-start gap-1.5 overflow-x-auto border-t border-line p-2 lg:shrink-0">
                             @foreach ($photos as $index => $photo)
                                 <button
                                     x-on:click="active = {{ $index }}"
@@ -268,7 +297,7 @@ new class extends Component
                         </div>
                         <p class="mt-1 text-4xl font-black tracking-tight text-signal tabular-nums">
                             @if ($vehicle->price_usd)
-                                ${{ number_format($vehicle->price_usd) }}
+                                ${{ number_format($vehicle->displayPriceUsd()) }}
                             @else
                                 <span class="text-xl text-ink/50">Price on request</span>
                             @endif
@@ -313,6 +342,17 @@ new class extends Component
                                         <p>PLATE — {{ $vehicle->vehicle_no }}</p>
                                     @endif
                                     <p>REF — {{ strtoupper(Str::limit($vehicle->id, 13, '')) }}</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if ($debug && $vehicle->listing_url)
+                            <div class="lg:mt-auto">
+                                <div class="mt-4 border border-line bg-paper p-3 font-mono text-[11px] leading-relaxed text-ink/60">
+                                    <p>SOURCE —
+                                        <a href="{{ $vehicle->listing_url }}" target="_blank" rel="noopener noreferrer"
+                                           class="text-signal underline">{{ $vehicle->listing_url }}</a>
+                                    </p>
                                 </div>
                             </div>
                         @endif
@@ -365,7 +405,7 @@ new class extends Component
         >
             <div
                 x-on:click.outside="$wire.closeContactModal()"
-                class="w-full max-w-md border border-line bg-white shadow-2xl"
+                class="w-full max-w-lg border border-line bg-white shadow-2xl"
             >
                 <div class="flex items-center justify-between border-b border-line p-5">
                     <div>
@@ -393,7 +433,18 @@ new class extends Component
                             {{ $vehicle->title() }} — Stock #{{ $vehicle->listing_id ?: Str::limit($vehicle->id, 8, '') }}
                         </p>
 
-                        <form wire:submit="sendInquiry" class="space-y-3">
+                        <form
+                            wire:submit="sendInquiry($refs.editor.innerHTML)"
+                            x-data="{
+                                empty: true,
+                                exec(command) {
+                                    document.execCommand(command);
+                                    this.$refs.editor.focus();
+                                    this.empty = this.$refs.editor.innerText.trim() === '';
+                                },
+                            }"
+                            class="space-y-3"
+                        >
                             <div>
                                 <label class="microlabel mb-1 block">Name</label>
                                 <input type="text" wire:model="contactName" class="field" placeholder="Your full name">
@@ -411,7 +462,36 @@ new class extends Component
                             </div>
                             <div>
                                 <label class="microlabel mb-1 block">Message (optional)</label>
-                                <textarea wire:model="contactMessage" rows="4" class="field" placeholder="Any questions about this vehicle..."></textarea>
+                                <div wire:ignore class="rounded-[3px] border border-line focus-within:border-ink">
+                                    <div class="flex items-center gap-0.5 border-b border-line bg-paper p-1.5">
+                                        <button type="button" x-on:mousedown.prevent="exec('bold')" class="grid size-7 place-items-center rounded-sm text-ink/55 transition hover:bg-white hover:text-ink" title="Bold">
+                                            <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5h6.5a3.5 3.5 0 0 1 0 7H7z"/><path d="M7 12h7a3.5 3.5 0 0 1 0 7H7z"/></svg>
+                                        </button>
+                                        <button type="button" x-on:mousedown.prevent="exec('italic')" class="grid size-7 place-items-center rounded-sm text-ink/55 transition hover:bg-white hover:text-ink" title="Italic">
+                                            <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4h6M8 20h6M13 4 11 20"/></svg>
+                                        </button>
+                                        <button type="button" x-on:mousedown.prevent="exec('underline')" class="grid size-7 place-items-center rounded-sm text-ink/55 transition hover:bg-white hover:text-ink" title="Underline">
+                                            <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v7a6 6 0 0 0 12 0V4"/><path d="M5 20h14"/></svg>
+                                        </button>
+                                        <span class="mx-1 h-4 w-px bg-ink/15"></span>
+                                        <button type="button" x-on:mousedown.prevent="exec('insertUnorderedList')" class="grid size-7 place-items-center rounded-sm text-ink/55 transition hover:bg-white hover:text-ink" title="Bullet list">
+                                            <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>
+                                        </button>
+                                        <button type="button" x-on:mousedown.prevent="exec('insertOrderedList')" class="grid size-7 place-items-center rounded-sm text-ink/55 transition hover:bg-white hover:text-ink" title="Numbered list">
+                                            <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 5v3M4 5l-1 .5M3.5 15.5h1.8a.7.7 0 0 1 .5 1.2L3.5 18.5h2.3" stroke-width="1.5"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="relative">
+                                        <p x-show="empty" x-cloak class="pointer-events-none absolute inset-0 px-3 py-2.5 text-sm text-ink/35">Any questions about this vehicle...</p>
+                                        <div
+                                            x-ref="editor"
+                                            wire:ref="editor"
+                                            contenteditable="true"
+                                            x-on:input="empty = $refs.editor.innerText.trim() === ''"
+                                            class="min-h-[9rem] max-h-72 overflow-y-auto px-3 py-2.5 text-sm leading-relaxed outline-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                        ></div>
+                                    </div>
+                                </div>
                                 @error('contactMessage') <p class="mt-1 text-[11px] text-signal">{{ $message }}</p> @enderror
                             </div>
 

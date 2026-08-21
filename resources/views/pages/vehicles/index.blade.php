@@ -500,7 +500,19 @@ new class extends Component
             </div>
 
             {{-- Search + filter panel --}}
-            <div class="card-enter mt-5 border border-ink/15 bg-white text-ink shadow-2xl" style="animation-delay: 90ms;" x-data="{ more: true }">
+            <div class="card-enter mt-5 border border-ink/15 bg-white text-ink shadow-2xl" style="animation-delay: 90ms;" x-data="{ mode: 'basic' }">
+                <div class="flex border-b border-line">
+                    <button type="button" x-on:click="mode = 'basic'"
+                            :class="mode === 'basic' ? 'border-signal text-ink' : 'border-transparent text-ink/40 hover:text-ink/70'"
+                            class="flex-1 border-b-2 px-4 py-3 text-center font-mono text-[11px] font-semibold tracking-[0.2em] uppercase transition sm:flex-none sm:px-6">
+                        Basic search
+                    </button>
+                    <button type="button" x-on:click="mode = 'advanced'"
+                            :class="mode === 'advanced' ? 'border-signal text-ink' : 'border-transparent text-ink/40 hover:text-ink/70'"
+                            class="flex-1 border-b-2 px-4 py-3 text-center font-mono text-[11px] font-semibold tracking-[0.2em] uppercase transition sm:flex-none sm:px-6">
+                        Advanced search
+                    </button>
+                </div>
                 <div class="border-b border-line p-4 pb-0">
                     <div class="relative">
                         <input
@@ -522,14 +534,26 @@ new class extends Component
 
                         {{-- Brands multi-select --}}
                         @php $brandsArmed = ! empty($draft['brands']); @endphp
-                        <div x-data="{ open: false }" x-on:click.outside="open = false" class="relative">
-                            <label class="microlabel mb-1 flex items-center gap-1.5 {{ $brandsArmed ? '!text-signal' : '' }}">
+                        <div x-data="{
+                                open: false,
+                                top: 0, left: 0, width: 0,
+                                place() {
+                                    const r = $refs.btn.getBoundingClientRect();
+                                    this.top = r.bottom + window.scrollY + 4;
+                                    this.left = r.left + window.scrollX;
+                                    this.width = r.width;
+                                },
+                             }"
+                             x-on:resize.window="open && place()"
+                             x-on:scroll.window="open = false"
+                             class="relative">
+                            <label class="microlabel mb-1 flex items-center gap-1.5 font-bold {{ $brandsArmed ? '!text-signal' : '' }}">
                                 @if ($brandsArmed)
                                     <span class="inline-block size-1.5 bg-signal"></span>
                                 @endif
                                 Brands
                             </label>
-                            <button type="button" x-on:click="open = !open"
+                            <button type="button" x-ref="btn" x-on:click="open = !open; place()"
                                     class="field flex items-center justify-between gap-2 text-left {{ $brandsArmed ? '!border-ink font-semibold' : '' }}">
                                 <span class="truncate">
                                     @if (! $brandsArmed) All brands
@@ -542,36 +566,52 @@ new class extends Component
                                     <svg class="size-3.5 shrink-0 text-ink/40" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"/></svg>
                                 @endif
                             </button>
-                            <div x-show="open" x-cloak x-transition.opacity.duration.150ms
-                                 class="absolute z-40 mt-1 max-h-96 w-full min-w-64 overflow-y-auto border border-line bg-white shadow-xl">
-                                @foreach ($this->brandGroups as $group)
-                                    <p class="microlabel sticky top-0 border-b border-line bg-paper px-3 py-1.5">{{ $group['label'] }}</p>
-                                    @foreach ($group['brands'] as $brandItem)
-                                        <label class="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 transition hover:bg-paper">
-                                            <input type="checkbox" wire:model.live="draft.brands" value="{{ $brandItem['slug'] }}" class="accent-signal">
-                                            @if ($brandItem['logo'])
-                                                <img src="{{ $brandItem['logo'] }}" alt="" loading="lazy" class="h-5 w-7 object-contain">
-                                            @else
-                                                <span class="h-5 w-7"></span>
-                                            @endif
-                                            <span class="flex-1 truncate text-sm">{{ $brandItem['name'] }}</span>
-                                            <span class="font-mono text-[10px] text-ink/40 tabular-nums">{{ number_format($brandItem['total']) }}</span>
-                                        </label>
+                            <template x-teleport="body">
+                                <div x-show="open" x-cloak x-transition.opacity.duration.150ms
+                                     x-on:click.outside="if (! $refs.btn.contains($event.target)) open = false"
+                                     :style="`top:${top}px; left:${left}px; width:${width}px;`"
+                                     class="fixed z-50 max-h-96 min-w-64 overflow-y-auto border border-line bg-white shadow-xl">
+                                    @foreach ($this->brandGroups as $group)
+                                        <p class="microlabel sticky top-0 border-b border-line bg-paper px-3 py-1.5">{{ $group['label'] }}</p>
+                                        @foreach ($group['brands'] as $brandItem)
+                                            <label class="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 transition hover:bg-paper">
+                                                <input type="checkbox" wire:model.live="draft.brands" value="{{ $brandItem['slug'] }}" class="accent-signal">
+                                                @if ($brandItem['logo'])
+                                                    <img src="{{ $brandItem['logo'] }}" alt="" loading="lazy" class="h-5 w-7 object-contain">
+                                                @else
+                                                    <span class="h-5 w-7"></span>
+                                                @endif
+                                                <span class="flex-1 truncate text-sm">{{ $brandItem['name'] }}</span>
+                                                <span class="font-mono text-[10px] text-ink/40 tabular-nums">{{ number_format($brandItem['total']) }}</span>
+                                            </label>
+                                        @endforeach
                                     @endforeach
-                                @endforeach
-                            </div>
+                                </div>
+                            </template>
                         </div>
 
                         {{-- Models multi-select --}}
                         @php $modelsArmed = ! empty($draft['brands']) && ! empty($draft['models']); @endphp
-                        <div x-data="{ open: false }" x-on:click.outside="open = false" class="relative">
-                            <label class="microlabel mb-1 flex items-center gap-1.5 {{ $modelsArmed ? '!text-signal' : '' }}">
+                        <div x-data="{
+                                open: false,
+                                top: 0, left: 0, width: 0,
+                                place() {
+                                    const r = $refs.btn.getBoundingClientRect();
+                                    this.top = r.bottom + window.scrollY + 4;
+                                    this.left = r.left + window.scrollX;
+                                    this.width = r.width;
+                                },
+                             }"
+                             x-on:resize.window="open && place()"
+                             x-on:scroll.window="open = false"
+                             class="relative">
+                            <label class="microlabel mb-1 flex items-center gap-1.5 font-bold {{ $modelsArmed ? '!text-signal' : '' }}">
                                 @if ($modelsArmed)
                                     <span class="inline-block size-1.5 bg-signal"></span>
                                 @endif
                                 Models
                             </label>
-                            <button type="button" x-on:click="open = !open"
+                            <button type="button" x-ref="btn" x-on:click="open = !open; place()"
                                     @if (empty($draft['brands'])) disabled @endif
                                     class="field flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50 {{ $modelsArmed ? '!border-ink font-semibold' : '' }}">
                                 <span class="truncate">
@@ -586,21 +626,25 @@ new class extends Component
                                     <svg class="size-3.5 shrink-0 text-ink/40" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"/></svg>
                                 @endif
                             </button>
-                            <div x-show="open" x-cloak x-transition.opacity.duration.150ms
-                                 class="absolute z-40 mt-1 max-h-96 w-full min-w-64 overflow-y-auto border border-line bg-white shadow-xl">
-                                @forelse ($this->modelGroups as $brandName => $modelItems)
-                                    <p class="microlabel sticky top-0 border-b border-line bg-paper px-3 py-1.5">{{ $brandName }}</p>
-                                    @foreach ($modelItems as $modelItem)
-                                        <label class="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 transition hover:bg-paper">
-                                            <input type="checkbox" wire:model.live="draft.models" value="{{ $modelItem['slug'] }}" class="accent-signal">
-                                            <span class="flex-1 truncate text-sm">{{ $modelItem['name'] }}</span>
-                                            <span class="font-mono text-[10px] text-ink/40 tabular-nums">{{ number_format($modelItem['total']) }}</span>
-                                        </label>
-                                    @endforeach
-                                @empty
-                                    <p class="px-3 py-3 text-sm text-ink/50">Pick one or more brands first.</p>
-                                @endforelse
-                            </div>
+                            <template x-teleport="body">
+                                <div x-show="open" x-cloak x-transition.opacity.duration.150ms
+                                     x-on:click.outside="if (! $refs.btn.contains($event.target)) open = false"
+                                     :style="`top:${top}px; left:${left}px; width:${width}px;`"
+                                     class="fixed z-50 max-h-96 min-w-64 overflow-y-auto border border-line bg-white shadow-xl">
+                                    @forelse ($this->modelGroups as $brandName => $modelItems)
+                                        <p class="microlabel sticky top-0 border-b border-line bg-paper px-3 py-1.5">{{ $brandName }}</p>
+                                        @foreach ($modelItems as $modelItem)
+                                            <label class="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 transition hover:bg-paper">
+                                                <input type="checkbox" wire:model.live="draft.models" value="{{ $modelItem['slug'] }}" class="accent-signal">
+                                                <span class="flex-1 truncate text-sm">{{ $modelItem['name'] }}</span>
+                                                <span class="font-mono text-[10px] text-ink/40 tabular-nums">{{ number_format($modelItem['total']) }}</span>
+                                            </label>
+                                        @endforeach
+                                    @empty
+                                        <p class="px-3 py-3 text-sm text-ink/50">Pick one or more brands first.</p>
+                                    @endforelse
+                                </div>
+                            </template>
                         </div>
 
                         {{-- Chassis --}}
@@ -628,7 +672,7 @@ new class extends Component
                         {{-- Year range --}}
                         @php $yearArmed = ($draft['yearFrom'] ?? '') !== '' || ($draft['yearTo'] ?? '') !== ''; @endphp
                         <div class="sm:col-span-2 lg:col-span-2">
-                            <label class="microlabel mb-1 flex items-center gap-1.5 {{ $yearArmed ? '!text-signal' : '' }}">
+                            <label class="microlabel mb-1 flex items-center gap-1.5 font-bold {{ $yearArmed ? '!text-signal' : '' }}">
                                 @if ($yearArmed)
                                     <span class="inline-block size-1.5 bg-signal"></span>
                                 @endif
@@ -651,12 +695,12 @@ new class extends Component
                         </div>
                     </div>
 
-                    {{-- More filters (collapsible) --}}
-                    <div x-show="more" x-collapse x-cloak>
+                    {{-- Advanced search (collapsible) --}}
+                    <div x-show="mode === 'advanced'" x-collapse x-cloak>
                         <div class="grid grid-cols-1 gap-3 border-t border-line py-4 sm:grid-cols-2 lg:grid-cols-6">
                             @php $mileageArmed = ($draft['mileageFrom'] ?? '') !== '' || ($draft['mileageTo'] ?? '') !== ''; @endphp
                             <div>
-                                <label class="microlabel mb-1 flex items-center gap-1.5 {{ $mileageArmed ? '!text-signal' : '' }}">
+                                <label class="microlabel mb-1 flex items-center gap-1.5 font-bold {{ $mileageArmed ? '!text-signal' : '' }}">
                                     @if ($mileageArmed)
                                         <span class="inline-block size-1.5 bg-signal"></span>
                                     @endif
@@ -669,7 +713,7 @@ new class extends Component
                             </div>
                             @php $ccArmed = ($draft['ccFrom'] ?? '') !== '' || ($draft['ccTo'] ?? '') !== ''; @endphp
                             <div>
-                                <label class="microlabel mb-1 flex items-center gap-1.5 {{ $ccArmed ? '!text-signal' : '' }}">
+                                <label class="microlabel mb-1 flex items-center gap-1.5 font-bold {{ $ccArmed ? '!text-signal' : '' }}">
                                     @if ($ccArmed)
                                         <span class="inline-block size-1.5 bg-signal"></span>
                                     @endif
@@ -705,7 +749,7 @@ new class extends Component
                                 :selected="$draft['regions'] ?? []"
                             />
                             <div class="sm:col-span-2 lg:col-span-6">
-                                <label class="microlabel mb-1 block">Color</label>
+                                <label class="microlabel mb-1 block font-bold">Color</label>
                                 <div class="flex flex-wrap gap-1.5">
                                     @foreach ($this->facets['colors'] as $colorOption)
                                         <label class="flex cursor-pointer items-center gap-1.5 border px-2.5 py-1.5 text-[12px] transition select-none
@@ -724,9 +768,6 @@ new class extends Component
                 {{-- Panel footer --}}
                 <div class="flex flex-col items-stretch justify-between gap-3 bg-paper px-4 py-3 sm:flex-row sm:items-center">
                     <div class="flex items-center gap-5">
-                        <button type="button" x-on:click="more = !more"
-                                class="font-mono text-[11px] tracking-widest text-ink/60 uppercase transition hover:text-signal"
-                                x-text="more ? '− Less filters' : '+ More filters'"></button>
                         <button wire:click="resetAll"
                                 class="font-mono text-[11px] tracking-widest text-ink/40 uppercase transition hover:text-signal">
                             Reset
@@ -735,11 +776,11 @@ new class extends Component
                     <button wire:click="apply"
                             class="bg-ink px-8 py-3 font-mono text-xs font-semibold tracking-[0.2em] text-white uppercase transition hover:bg-signal">
                         <span wire:loading.remove wire:target="apply, draft">
-                            Search {{ number_format($this->previewCount) }} vehicles
+                            Search
                         </span>
                         <span wire:loading wire:target="apply, draft" class="inline-flex items-center gap-2">
                             <span class="pulse-dot inline-block size-2 rounded-full bg-white"></span>
-                            Counting…
+                            Searching…
                         </span>
                     </button>
                 </div>
@@ -759,8 +800,14 @@ new class extends Component
                     @foreach ($this->brandTiles as $tile)
                         <button
                             wire:click="toggleBrand('{{ $tile['slug'] }}')"
+                            wire:loading.class="opacity-50 pointer-events-none"
+                            wire:target="toggleBrand('{{ $tile['slug'] }}')"
                             title="{{ $tile['name'] }} ({{ number_format($tile['total']) }})"
-                            class="group flex flex-col items-center gap-1.5 border border-line bg-white p-3 transition hover:border-signal cursor-pointer">
+                            class="group relative flex flex-col items-center gap-1.5 border border-line bg-white p-3 transition hover:border-signal cursor-pointer">
+                            <span wire:loading wire:target="toggleBrand('{{ $tile['slug'] }}')"
+                                  class="absolute inset-0 grid place-items-center bg-white/80">
+                                <span class="pulse-dot inline-block size-2 rounded-full bg-signal"></span>
+                            </span>
                             <img src="{{ $tile['logo'] }}" alt="{{ $tile['name'] }}" loading="lazy"
                                  class="h-8 w-full object-contain grayscale transition-all duration-300 group-hover:scale-110 group-hover:grayscale-0">
                             <span class="w-full truncate text-center font-mono text-[9px] tracking-wide text-ink/50 uppercase">{{ $tile['name'] }}</span>
@@ -812,7 +859,7 @@ new class extends Component
                                 </p>
                                 <h3 class="mt-1 text-2xl font-black tracking-tight uppercase">{{ $hero->brand_name }} {{ $hero->model_name }}</h3>
                                 <p class="mt-0.5 truncate text-sm text-white/70">{{ $hero->trim }}</p>
-                                <p class="mt-2 text-2xl font-black text-signal tabular-nums">FOB ${{ number_format($hero->price_usd) }}</p>
+                                <p class="mt-2 text-2xl font-black text-signal tabular-nums">FOB ${{ number_format($hero->displayPriceUsd()) }}</p>
                             </div>
                         </a>
 
@@ -908,10 +955,16 @@ new class extends Component
                             @foreach ($this->brandTiles as $tile)
                                 <button
                                     wire:click="toggleBrand('{{ $tile['slug'] }}')"
+                                    wire:loading.class="opacity-50 pointer-events-none"
+                                    wire:target="toggleBrand('{{ $tile['slug'] }}')"
                                     title="{{ $tile['name'] }} ({{ number_format($tile['total']) }})"
-                                    class="group flex flex-col items-center gap-1 border p-1.5 transition
+                                    class="group relative flex flex-col items-center gap-1 border p-1.5 transition
                                         {{ in_array($tile['slug'], $brands, true) ? 'border-signal bg-signal/5' : 'border-line hover:border-ink' }}"
                                 >
+                                    <span wire:loading wire:target="toggleBrand('{{ $tile['slug'] }}')"
+                                          class="absolute inset-0 grid place-items-center bg-white/80">
+                                        <span class="pulse-dot inline-block size-2 rounded-full bg-signal"></span>
+                                    </span>
                                     <img src="{{ $tile['logo'] }}" alt="{{ $tile['name'] }}" loading="lazy"
                                          class="h-7 w-full object-contain transition-all duration-300 group-hover:grayscale-0 {{ in_array($tile['slug'], $brands, true) ? '' : 'grayscale' }}">
                                     <span class="w-full truncate text-center font-mono text-[8.5px] tracking-wide text-ink/50 uppercase">{{ $tile['name'] }}</span>
@@ -1006,7 +1059,7 @@ new class extends Component
                                                     </span>
                                                     <span class="text-xl font-extrabold tracking-tight text-signal tabular-nums">
                                                         @if ($vehicle->price_usd)
-                                                            FOB ${{ number_format($vehicle->price_usd) }}
+                                                            FOB ${{ number_format($vehicle->displayPriceUsd()) }}
                                                         @else
                                                             <span class="text-sm font-bold text-ink/50">Price on request</span>
                                                         @endif

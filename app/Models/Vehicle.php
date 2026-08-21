@@ -70,6 +70,17 @@ class Vehicle extends Model
         return self::VALUE_LABELS[$value] ?? ucfirst(str_replace('_', ' ', $value));
     }
 
+    public function displayPriceUsd(): ?float
+    {
+        if ($this->price_usd === null) {
+            return null;
+        }
+
+        $markup = 1 + (config('services.pricing.markup', 10) / 100);
+
+        return round(((float) $this->price_usd) * $markup);
+    }
+
     public function title(): string
     {
         return trim(($this->year ? $this->year.' ' : '').$this->brand_name.' '.$this->model_name);
